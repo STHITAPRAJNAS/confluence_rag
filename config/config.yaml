@@ -1,0 +1,20 @@
+database:
+  host: "your-db-host"  # Replace with your RDS endpoint or localhost for local dev
+  port: 5432
+  dbname: "vector_db"  # Replace with your database name
+  user: "postgres"  # Replace with your database username
+  secret_name: "prod/db_credentials" # Secret name in AWS Secrets Manager for RDS credentials
+  collection_name: "confluence_embeddings"
+  assumed_role_arn: "arn:aws:iam::123456789012:role/RDSRole" # Replace with your RDS role ARN
+
+embeddings:
+  model_id: "amazon.titan-embed-text-v1"
+  assumed_role_arn: "arn:aws:iam::123456789012:role/BedrockRole" # Replace with your Bedrock role ARN
+
+llm:
+  model_id: "anthropic.claude-v2"  # Or another model you prefer
+  model_kwargs:
+    temperature: 0.1
+    top_p: 1
+    top_k: 250
+    max_tokens_to_sample: 2048
