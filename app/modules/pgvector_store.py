@@ -31,9 +31,21 @@ class PGVectorStore(VectorStore):
             session=rds_session
         )
 
-    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]] = None) -> None:
+    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]] = None, batch_size: int = 100) -> None:
+        """
+        Adds text and metadata to the PGVectorStore in batches.
+
+        Args:
+            texts (List[str]): List of texts to add.
+            metadatas (List[Dict[str, Any]], optional): List of metadata dictionaries. Defaults to None.
+            batch_size (int): The size of each batch. Defaults to 100.
+        """
         super().add_texts(texts, metadatas)
-        self.vector_store.add_texts(texts, metadatas)
+
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+            batch_metadatas = metadatas[i:i + batch_size] if metadatas else None
+            self.vector_store.add_texts(batch_texts, batch_metadatas)
 
     def similarity_search(self, query: str, k: int = 4) -> List[Tuple[str, float]]:
         super().similarity_search(query, k)
