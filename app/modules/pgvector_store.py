@@ -31,21 +31,31 @@ class PGVectorStore(VectorStore):
             session=rds_session
         )
 
-    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]] = None, batch_size: int = 100) -> None:
+    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]] = None, embeddings: List[List[float]] = None, batch_size: int = 100) -> None:
         """
-        Adds text and metadata to the PGVectorStore in batches.
+        Adds text, metadata and embeddings to the PGVectorStore in batches.
 
         Args:
             texts (List[str]): List of texts to add.
             metadatas (List[Dict[str, Any]], optional): List of metadata dictionaries. Defaults to None.
+            embeddings (List[List[float]], optional): List of embeddings. Defaults to None.
             batch_size (int): The size of each batch. Defaults to 100.
         """
         super().add_texts(texts, metadatas)
 
+        ids = [i for i in range(len(texts))]
+
         for i in range(0, len(texts), batch_size):
             batch_texts = texts[i:i + batch_size]
             batch_metadatas = metadatas[i:i + batch_size] if metadatas else None
-            self.vector_store.add_texts(batch_texts, batch_metadatas)
+            batch_embeddings = embeddings[i:i + batch_size] if embeddings else None
+            batch_ids = ids[i:i + batch_size]
+            self.vector_store.add_embeddings_with_metadata(
+                texts=batch_texts,
+                embeddings=batch_embeddings,
+                metadatas=batch_metadatas,
+                ids=batch_ids
+            )
 
     def similarity_search(self, query: str, k: int = 4) -> List[Tuple[str, float]]:
         super().similarity_search(query, k)

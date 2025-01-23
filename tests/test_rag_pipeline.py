@@ -68,19 +68,37 @@ class TestRAGPipeline(unittest.TestCase):
 
     @patch("app.pipelines.rag_pipeline.logger")
     def test_ingest_data(self, mock_logger):
-        documents = [{"page_content": "test content", "metadata": {"id": "1"}}]
-        chunks = [{"page_content": "test chunk", "metadata": {"id": "1"}}]
-        self.document_loader_mock.load.return_value = documents
-        self.chunking_mock.chunk_document.return_value = chunks
-        self.embeddings_mock.embed_documents.return_value = [[0.1, 0.2, 0.3]]
+        # Simulate loading two batches of documents
+        self.document_loader_mock.load.side_effect = [
+            [{"page_content": "test content 1", "metadata": {"id": "1"}}],
+            [{"page_content": "test content 2", "metadata": {"id": "2"}}],
+            [],  # Empty list to signal the end of documents
+        ]
+        self.chunking_mock.chunk_document.side_effect = [
+            [{"page_content": "test chunk 1", "metadata": {"id": "1"}}],
+            [{"page_content": "test chunk 2", "metadata": {"id": "2"}}],
+        ]
+        self.embeddings_mock.embed_documents.side_effect = [
+            [[0.1, 0.2, 0.3]],
+            [[0.4, 0.5, 0.6]]
+        ]
 
-        self.rag_pipeline.ingest_data()
+        self.rag_pipeline.ingest_data(batch_size=1)  # Ingest in batches of 1
 
-        self.document_loader_mock.load.assert_called_once()
-        self.chunking_mock.chunk_document.assert_called_once_with(documents[0])
-        self.embeddings_mock.embed_documents.assert_called_once_with(["test chunk"])
-        self.vector_store_mock.add_texts.assert_called_once_with(
-            ["test chunk"], [{"id": "1"}]
+        self.assertEqual(self.document_loader_mock.load.call_count, 3)  # Called 3 times (2 batches + 1 empty)
+        self.chunking_mock.chunk_document.assert_any_call(
+            {"page_content": "test content 1", "metadata": {"id": "1"}}
+        )
+        self.chunking_mock.chunk_document.assert_any_call(
+            {"page_content": "test content 2", "metadata": {"id": "2"}}
+        )
+        self.embeddings_mock.embed_documents.assert_any_call(["test chunk 1"])
+        self.embeddings_mock.embed_documents.assert_any_call(["test chunk 2"])
+        self.vector_store_mock.add_texts.assert_any_call(
+            ["test chunk 1"], metadatas=[{"id": "1"}], embeddings=[[0.1, 0.2, 0.3]]
+        )
+        self.vector_store_mock.add_texts.assert_any_call(
+            ["test chunk 2"], metadatas=[{"id": "2"}], embeddings=[[0.4, 0.5, 0.6]]
         )
         mock_logger.info.assert_called()
 
@@ -90,23 +108,29 @@ class TestRAGPipeline(unittest.TestCase):
 
         self.rag_pipeline.ingest_data()
 
-        self.document_loader_mock.load.assert_called_once()
+        self.document_loader_mock.load.assert_called_once_with(limit=100, offset=0)
         self.chunking_mock.chunk_document.assert_not_called()
+        self.embeddings_mock.embed_documents.assert_not_called()
         self.vector_store_mock.add_texts.assert_not_called()
-        mock_logger.warning.assert_called_with("No documents loaded.")
+        mock_logger.warning.assert_called_with("No more documents found.")
 
     @patch("app.pipelines.rag_pipeline.logger")
-    def test_generate_response(self, mock_logger):
+    @patch('app.pipelines.rag_pipeline.hashlib.sha256')
+    def test_generate_response(self, mock_hash, mock_logger):
         query = "test query"
+        mock_hash.return_value.hexdigest.return_value = "test_hash"
         relevant_docs = [("test context", 0.8)]
         self.vector_store_mock.similarity_search.return_value = relevant_docs
         self.llm_mock.generate_text.return_value = "test answer"
 
-        response = self.rag_pipeline.generate_response(query)
+        # Call generate_response twice with the same query
+        response1 = self.rag_pipeline.generate_response(query)
+        response2 = self.rag_pipeline.generate_response(query)
 
         self.vector_store_mock.similarity_search.assert_called_once_with(query, k=4)
         self.llm_mock.generate_text.assert_called_once()
-        self.assertEqual(response, "test answer")
+        self.assertEqual(response1, "test answer")
+        self.assertEqual(response2, "test answer") # Should return the cached response
         mock_logger.info.assert_called()
 
     def test_generate_response_error(self):
