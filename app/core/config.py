@@ -1,8 +1,9 @@
 import yaml
 import os
+import boto3
+from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
 from app.utils.logger import get_logger
-from app.core.aws_manager import AWSManager
 
 logger = get_logger(__name__)
 
@@ -12,8 +13,37 @@ class Config:
         load_dotenv()  # Load environment variables from .env file
         with open(config_path, "r") as f:
             self.config = yaml.safe_load(f)
-        self.aws_manager = AWSManager(self)
-        self.secret_manager = self.aws_manager.get_client("secretsmanager")
+
+        self.aws_profile = self.get("AWS_PROFILE")
+        self.aws_region = self.get("AWS_REGION")
+        self.session = self._create_session()
+        self.secret_manager = self.get_client("secretsmanager")
+
+    def _create_session(self):
+        """Creates a boto3 session, prioritizing named profiles for local development
+        and falling back to IAM roles for AWS environments."""
+        try:
+            if self.aws_profile:
+                # Use named profile for local development
+                logger.info(f"Using AWS profile: {self.aws_profile}")
+                session = boto3.Session(profile_name=self.aws_profile, region_name=self.aws_region)
+            else:
+                # Rely on IAM roles in EC2/EKS or environment variables
+                logger.info("Using default AWS session (IAM role or environment variables)")
+                session = boto3.Session(region_name=self.aws_region)
+            return session
+        except NoCredentialsError:
+            logger.error("AWS credentials not found. Please configure your credentials.")
+            raise
+
+    def get_client(self, service_name: str):
+        """
+        Returns a boto3 client for the specified service.
+
+        Args:
+            service_name (str): The name of the AWS service (e.g., 's3', 'bedrock', 'secretsmanager').
+        """
+        return self.session.client(service_name, region_name=self.aws_region)
 
     def get(self, key, default=None):
         """

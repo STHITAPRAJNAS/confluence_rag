@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 def main(query: str = None):
     config = Config()
-    aws_manager = config.aws_manager
+    aws_manager = AWSManager(config.get("AWS_PROFILE"), config.get("AWS_REGION"))
 
     # Instantiate modules
     embeddings_module = BedrockEmbeddings(config, aws_manager)

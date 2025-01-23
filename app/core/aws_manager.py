@@ -1,17 +1,13 @@
 import boto3
-import os
 from botocore.exceptions import NoCredentialsError, ClientError
 from app.utils.logger import get_logger
-from app.core.config import Config
 
 logger = get_logger(__name__)
 
-
 class AWSManager:
-    def __init__(self, config: Config):
-        self.config = config
-        self.aws_profile = self.config.get("AWS_PROFILE")
-        self.aws_region = self.config.get("AWS_REGION")
+    def __init__(self, aws_profile: str, aws_region: str):
+        self.aws_profile = aws_profile
+        self.aws_region = aws_region
         self.session = self._create_session()
 
     def _create_session(self):

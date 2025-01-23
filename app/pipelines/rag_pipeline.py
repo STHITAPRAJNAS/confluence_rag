@@ -47,6 +47,7 @@ class RAGPipeline:
             metadatas = [chunk["metadata"] for chunk in all_chunks]
 
             logger.info(f"Embedding {len(texts)} chunks...")
+            self.embeddings.embed_documents(texts)
             self.vector_store.add_texts(texts, metadatas)
             logger.info("Data ingestion completed successfully.")
 

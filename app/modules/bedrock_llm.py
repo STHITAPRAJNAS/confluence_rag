@@ -1,6 +1,6 @@
 from typing import Any
 
-from langchain_aws.llms import Bedrock
+from langchain_community.llms import Bedrock
 from app.core.llm import LLM
 from app.core.config import Config
 from app.core.aws_manager import AWSManager
@@ -26,4 +26,4 @@ class BedrockLLM(LLM):
 
     def generate_text(self, prompt: str, **kwargs: Any) -> str:
         super().generate_text(prompt, **kwargs)
-        return self.llm.generate(prompt, **kwargs).generations[0].text
+        return self.llm.invoke(prompt, **kwargs)

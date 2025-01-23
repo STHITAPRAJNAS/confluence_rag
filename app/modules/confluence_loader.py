@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 
-from langchain_confluence.confluence import ConfluenceLoader
+from langchain_community.document_loaders import ConfluenceLoader
 from app.core.document_loader import DocumentLoader
 from app.core.config import Config
 from app.utils.logger import get_logger

@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict, Any
-from langchain_postgres import PostgresVectorStore
+from langchain_community.vectorstores.pgvector import PGVector as PostgresVectorStore
 from app.core.vectorstore import VectorStore
 from app.core.config import Config
 from app.core.embeddings import Embeddings
