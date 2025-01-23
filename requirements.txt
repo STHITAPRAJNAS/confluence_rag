@@ -1,0 +1,30 @@
+# Core LangChain libraries
+langchain==0.1.12
+langchain-community==0.0.25
+langchain-core==0.1.27
+langchain-postgres==0.0.4
+langchain-text-splitters==0.0.1
+langchain-aws==0.1.1
+
+# AWS SDK for Python (Boto3)
+boto3==1.29.7
+
+# Database driver (PostgreSQL)
+psycopg2-binary==2.9.9
+
+# YAML parsing
+PyYAML==6.0.1
+
+# Environment variable management
+python-dotenv==1.0.1
+
+# Optional: for static type checking (recommended)
+mypy==1.8.0
+
+# Optional: for testing
+pytest==7.4.4
+pytest-mock==3.12.0
+# moto==4.2.13  # For mocking AWS services in tests - careful with this, it could be heavy
+
+# Markdown
+markdown==3.6
